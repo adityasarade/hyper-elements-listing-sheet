@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "template": {
+    "module": "../templates/listing-sheet.tsx",
+    "id": "finchlowe.ListingSheet",
+    "version": "1.0.0",
+    "sha256": "c661c7a3e95a0967164bff224fef98a4f8bc41f1671b6bf4a52b644ab6bfbadd"
+  },
+  "formats": [
+    "a4",
+    "letter"
+  ],
+  "values": {
+    "reference": "FL–063",
+    "address": "Flat 2, Saltglass Works",
+    "street": "8 Lantern Steps",
+    "town": "Saltmere",
+    "price": 1450,
+    "basis": "rent",
+    "floor": "First",
+    "tenure": "Assured tenancy",
+    "councilTax": "B",
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "description": [
+      "This first-floor flat occupies one end of an old glassworks. Three tall windows light the living room, which has space for a table as well as a sofa.",
+      "The kitchen sits behind the hall. The bedroom faces the courtyard, away from Lantern Steps."
+    ],
+    "features": [
+      "Three tall living room windows",
+      "Separate eat-in kitchen",
+      "Courtyard-facing bedroom",
+      "Covered cycle parking"
+    ],
+    "rooms": [
+      {
+        "name": "Living room",
+        "kind": "living",
+        "x": 0,
+        "y": 0,
+        "width": 5.6,
+        "depth": 4.45
+      },
+      {
+        "name": "Bedroom",
+        "kind": "bedroom",
+        "x": 5.6,
+        "y": 0.9,
+        "width": 3.25,
+        "depth": 3.55
+      },
+      {
+        "name": "Hall",
+        "kind": "hall",
+        "x": 1.8,
+        "y": 4.45,
+        "width": 7.05,
+        "depth": 1.25
+      },
+      {
+        "name": "Kitchen",
+        "kind": "kitchen",
+        "x": 1.8,
+        "y": 5.7,
+        "width": 3.75,
+        "depth": 2.6
+      },
+      {
+        "name": "Shower room",
+        "kind": "bathroom",
+        "x": 5.55,
+        "y": 5.7,
+        "width": 2.55,
+        "depth": 2.25
+      }
+    ],
+    "doors": [
+      {
+        "room": "Hall",
+        "wall": "east",
+        "offset": 0.17,
+        "width": 0.9,
+        "hinge": "end",
+        "swing": "out"
+      },
+      {
+        "room": "Living room",
+        "wall": "south",
+        "offset": 4.45,
+        "width": 0.85,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "room": "Bedroom",
+        "wall": "south",
+        "offset": 0.32,
+        "width": 0.8,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Kitchen",
+        "wall": "north",
+        "offset": 0.26,
+        "width": 0.82,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Shower room",
+        "wall": "north",
+        "offset": 1.39,
+        "width": 0.77,
+        "hinge": "end",
+        "swing": "in"
+      }
+    ],
+    "windows": [
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 0.43,
+        "width": 1.15
+      },
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 2.25,
+        "width": 1.1
+      },
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 4,
+        "width": 1.15
+      },
+      {
+        "room": "Bedroom",
+        "wall": "east",
+        "offset": 0.75,
+        "width": 1.6
+      },
+      {
+        "room": "Kitchen",
+        "wall": "south",
+        "offset": 1.1,
+        "width": 1.55
+      },
+      {
+        "room": "Shower room",
+        "wall": "south",
+        "offset": 0.82,
+        "width": 0.8
+      }
+    ],
+    "epcCurrent": 61,
+    "epcPotential": 78,
+    "agent": "Robin Lowe",
+    "phone": "01632 960 381",
+    "email": "robin@finchandlowe.example",
+    "viewings": "By appointment on Wednesdays, 5–7 pm, and Fridays, 12–2 pm."
+  }
+}

@@ -1,0 +1,6 @@
+node_modules/
+out/
+.cache/
+.DS_Store
+ENTRY.md
+REVISION.md

@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "template": {
+    "module": "../templates/listing-sheet.tsx",
+    "id": "finchlowe.ListingSheet",
+    "version": "1.0.0",
+    "sha256": "c661c7a3e95a0967164bff224fef98a4f8bc41f1671b6bf4a52b644ab6bfbadd"
+  },
+  "formats": [
+    "a4",
+    "letter"
+  ],
+  "values": {
+    "reference": "FL–042",
+    "address": "Flat 4, Ropewalk House",
+    "street": "12 Quay Lane",
+    "town": "Saltmere",
+    "price": 385000,
+    "basis": "sale",
+    "floor": "Second",
+    "tenure": "Leasehold",
+    "councilTax": "C",
+    "bedrooms": 2,
+    "bathrooms": 1,
+    "description": [
+      "On the second floor of an old rope warehouse, this flat looks across Quay Lane towards the harbour. Deep window seats and the original timber beams tell you what the building used to be.",
+      "The kitchen is separate from the living room. Both bedrooms sit off the hall, away from the quay."
+    ],
+    "features": [
+      "Harbour outlook",
+      "Original timber beams",
+      "Separate kitchen",
+      "Residents’ bike store"
+    ],
+    "rooms": [
+      {
+        "name": "Living room",
+        "kind": "living",
+        "x": 0,
+        "y": 0,
+        "width": 5.2,
+        "depth": 4.1
+      },
+      {
+        "name": "Kitchen",
+        "kind": "kitchen",
+        "x": 5.2,
+        "y": 0.4,
+        "width": 3.6,
+        "depth": 3.7
+      },
+      {
+        "name": "Hall",
+        "kind": "hall",
+        "x": 0,
+        "y": 4.1,
+        "width": 8.8,
+        "depth": 1.35
+      },
+      {
+        "name": "Bedroom 1",
+        "kind": "bedroom",
+        "x": 0,
+        "y": 5.45,
+        "width": 3.45,
+        "depth": 3.15
+      },
+      {
+        "name": "Bedroom 2",
+        "kind": "bedroom",
+        "x": 3.45,
+        "y": 5.45,
+        "width": 3.15,
+        "depth": 2.9
+      },
+      {
+        "name": "Bathroom",
+        "kind": "bathroom",
+        "x": 6.6,
+        "y": 5.45,
+        "width": 2.2,
+        "depth": 2.65
+      }
+    ],
+    "doors": [
+      {
+        "room": "Hall",
+        "wall": "east",
+        "offset": 0.2,
+        "width": 0.95,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Living room",
+        "wall": "south",
+        "offset": 3.9,
+        "width": 0.88,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "room": "Kitchen",
+        "wall": "south",
+        "offset": 0.32,
+        "width": 0.8,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Bedroom 1",
+        "wall": "north",
+        "offset": 2.38,
+        "width": 0.8,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "room": "Bedroom 2",
+        "wall": "north",
+        "offset": 0.24,
+        "width": 0.8,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Bathroom",
+        "wall": "north",
+        "offset": 1.16,
+        "width": 0.76,
+        "hinge": "end",
+        "swing": "in"
+      }
+    ],
+    "windows": [
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 0.55,
+        "width": 1.55
+      },
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 3.1,
+        "width": 1.55
+      },
+      {
+        "room": "Kitchen",
+        "wall": "north",
+        "offset": 1.05,
+        "width": 1.5
+      },
+      {
+        "room": "Bedroom 1",
+        "wall": "south",
+        "offset": 0.83,
+        "width": 1.75
+      },
+      {
+        "room": "Bedroom 2",
+        "wall": "south",
+        "offset": 0.75,
+        "width": 1.65
+      },
+      {
+        "room": "Bathroom",
+        "wall": "south",
+        "offset": 0.68,
+        "width": 0.84
+      }
+    ],
+    "epcCurrent": 72,
+    "epcPotential": 84,
+    "agent": "Nell Finch",
+    "phone": "01632 960 214",
+    "email": "nell@finchandlowe.example",
+    "viewings": "By appointment on Thursdays, 4–6 pm, and Saturdays, 10 am–noon."
+  }
+}
