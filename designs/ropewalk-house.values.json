@@ -4,13 +4,21 @@
     "module": "../templates/listing-sheet.tsx",
     "id": "finchlowe.ListingSheet",
     "version": "1.0.0",
-    "sha256": "c661c7a3e95a0967164bff224fef98a4f8bc41f1671b6bf4a52b644ab6bfbadd"
+    "sha256": "d0d8465a435dbb64c3386044653c2dd2fda1c2dffa3370b12b51f6fad212c34d"
   },
   "formats": [
     "a4",
     "letter"
   ],
   "values": {
+    "agency": {
+      "name": "Finch & Lowe",
+      "descriptor": "Estate & letting agents",
+      "website": "https://finchandlowe.example",
+      "email": "nell@finchandlowe.example",
+      "phone": "01632 960 214",
+      "footerLine": "Finch & Lowe"
+    },
     "reference": "FL–042",
     "address": "Flat 4, Ropewalk House",
     "street": "12 Quay Lane",
@@ -173,8 +181,6 @@
     "epcCurrent": 72,
     "epcPotential": 84,
     "agent": "Nell Finch",
-    "phone": "01632 960 214",
-    "email": "nell@finchandlowe.example",
     "viewings": "By appointment on Thursdays, 4–6 pm, and Saturdays, 10 am–noon."
   }
 }

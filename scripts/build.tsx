@@ -11,7 +11,7 @@
  * Fonts are loaded as the gallery's own generator loads them: each Google font the root names, as TTF.
  * Exits 1 when a design has an error or a warning.
  *
- *   npm run build              every design in src/
+ *   npm run build              every source example and values file
  *   npm run build -- src/x.tsx one design
  *   npm run build -- designs/x.values.json  each selected paper size
  */
@@ -31,7 +31,10 @@ const outDir = join(root, "out");
 await mkdir(outDir, { recursive: true });
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const files = args.length ? args : (await readdir(join(root, "src"))).filter((f) => f.endsWith(".tsx")).map((f) => join("src", f));
+const files = args.length ? args : [
+  ...(await readdir(join(root, "src"))).filter((f) => f.endsWith(".tsx")).map((f) => join("src", f)),
+  ...(await readdir(join(root, "designs"))).filter((f) => f.endsWith(".values.json")).map((f) => join("designs", f)),
+];
 
 let failed = false;
 for await (const { file, slug, element, rootEl, rootName } of examples(files)) {

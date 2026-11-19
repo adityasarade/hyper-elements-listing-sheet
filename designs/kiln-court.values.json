@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "template": {
+    "module": "../templates/listing-sheet.tsx",
+    "id": "finchlowe.ListingSheet",
+    "version": "1.0.0",
+    "sha256": "d0d8465a435dbb64c3386044653c2dd2fda1c2dffa3370b12b51f6fad212c34d"
+  },
+  "formats": [
+    "a4",
+    "letter"
+  ],
+  "values": {
+    "agency": {
+      "name": "Marlowe & Reed",
+      "descriptor": "Independent estate agents",
+      "website": "https://marloweandreed.example",
+      "email": "iris@marloweandreed.example",
+      "phone": "+44 1632 960 587",
+      "footerLine": "Marlowe & Reed · Saltmere"
+    },
+    "reference": "MR–107",
+    "address": "Flat 7, Kiln Court",
+    "street": "3 Cinder Row",
+    "town": "Saltmere",
+    "price": 265000,
+    "basis": "sale",
+    "floor": "First",
+    "tenure": "Leasehold",
+    "councilTax": "B",
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "description": [
+      "This first-floor flat sits above the courtyard of a former tileworks. The living room has two deep-set windows overlooking the old kiln chimney.",
+      "A wide hall leads to the separate kitchen and shower room. The bedroom has a recess for a wardrobe."
+    ],
+    "features": [
+      "Courtyard outlook",
+      "Deep-set living room windows",
+      "Separate kitchen",
+      "Shared courtyard garden"
+    ],
+    "rooms": [
+      {
+        "name": "Living room",
+        "kind": "living",
+        "x": 0,
+        "y": 0,
+        "width": 4.9,
+        "depth": 4.2
+      },
+      {
+        "name": "Bedroom",
+        "kind": "bedroom",
+        "x": 4.9,
+        "y": 0.6,
+        "width": 3.5,
+        "depth": 3.6
+      },
+      {
+        "name": "Hall",
+        "kind": "hall",
+        "x": 1.5,
+        "y": 4.2,
+        "width": 6.9,
+        "depth": 1.3
+      },
+      {
+        "name": "Kitchen",
+        "kind": "kitchen",
+        "x": 1.5,
+        "y": 5.5,
+        "width": 3.4,
+        "depth": 2.5
+      },
+      {
+        "name": "Shower room",
+        "kind": "bathroom",
+        "x": 4.9,
+        "y": 5.5,
+        "width": 2.2,
+        "depth": 2.1
+      }
+    ],
+    "doors": [
+      {
+        "room": "Hall",
+        "wall": "east",
+        "offset": 0.19,
+        "width": 0.9,
+        "hinge": "end",
+        "swing": "out"
+      },
+      {
+        "room": "Living room",
+        "wall": "south",
+        "offset": 3.72,
+        "width": 0.82,
+        "hinge": "end",
+        "swing": "in"
+      },
+      {
+        "room": "Bedroom",
+        "wall": "south",
+        "offset": 0.27,
+        "width": 0.8,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Kitchen",
+        "wall": "north",
+        "offset": 0.35,
+        "width": 0.8,
+        "hinge": "start",
+        "swing": "in"
+      },
+      {
+        "room": "Shower room",
+        "wall": "north",
+        "offset": 1.2,
+        "width": 0.78,
+        "hinge": "end",
+        "swing": "in"
+      }
+    ],
+    "windows": [
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 0.55,
+        "width": 1.3
+      },
+      {
+        "room": "Living room",
+        "wall": "north",
+        "offset": 2.95,
+        "width": 1.3
+      },
+      {
+        "room": "Bedroom",
+        "wall": "north",
+        "offset": 0.95,
+        "width": 1.45
+      },
+      {
+        "room": "Kitchen",
+        "wall": "south",
+        "offset": 0.95,
+        "width": 1.5
+      },
+      {
+        "room": "Shower room",
+        "wall": "south",
+        "offset": 0.73,
+        "width": 0.8
+      }
+    ],
+    "epcCurrent": 68,
+    "epcPotential": 83,
+    "agent": "Iris Marlowe",
+    "viewings": "By appointment. Tue 4–6 pm or Sat 11 am–1 pm."
+  }
+}

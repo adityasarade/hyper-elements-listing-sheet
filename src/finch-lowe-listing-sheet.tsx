@@ -68,7 +68,17 @@ export type DoorOpening = WindowOpening & {
   swing: typeof SWINGS[number];
 };
 
+export type Agency = {
+  name: string;
+  descriptor: string;
+  website: string;
+  email: string;
+  phone: string;
+  footerLine: string;
+};
+
 export type ListingValues = {
+  agency?: Agency;
   reference: string;
   address: string;
   street: string;
@@ -88,8 +98,9 @@ export type ListingValues = {
   epcCurrent: number;
   epcPotential: number;
   agent: string;
-  phone: string;
-  email: string;
+  /** Contact details from values files made before the agency fields. */
+  phone?: string;
+  email?: string;
   viewings: string;
 };
 
@@ -98,7 +109,34 @@ export type ListingSheetProps = {
   size?: PaperSize;
 };
 
+const finchAndLowe: Agency = {
+  name: "Finch & Lowe",
+  descriptor: "Estate & letting agents",
+  website: "https://finchandlowe.example",
+  email: "nell@finchandlowe.example",
+  phone: "01632 960 214",
+  footerLine: "Finch & Lowe",
+};
+
+export function listingAgency({ agency, phone, email }: ListingValues): Agency {
+  return agency ?? { ...finchAndLowe, phone: phone ?? finchAndLowe.phone, email: email ?? finchAndLowe.email };
+}
+
+export function agencyWebsite(website: string): URL {
+  let url: URL;
+  try {
+    url = new URL(website);
+  } catch {
+    throw new Error("agency.website: Enter a full website URL, including https:// or http://.");
+  }
+  if (!/^https?:\/\//i.test(website) || /[\s\\]/.test(website) || !url.hostname || url.username || url.password) {
+    throw new Error("agency.website: Use an HTTP or HTTPS website URL without credentials.");
+  }
+  return url;
+}
+
 export const ropewalk: ListingValues = {
+  agency: finchAndLowe,
   reference: "FL–042",
   address: "Flat 4, Ropewalk House",
   street: "12 Quay Lane",
@@ -142,8 +180,6 @@ export const ropewalk: ListingValues = {
   epcCurrent: 72,
   epcPotential: 84,
   agent: "Nell Finch",
-  phone: "01632 960 214",
-  email: "nell@finchandlowe.example",
   viewings: "By appointment on Thursdays, 4–6 pm, and Saturdays, 10 am–noon.",
 };
 
@@ -162,8 +198,9 @@ const metric = (room: Room) => `${room.width.toFixed(2)} × ${room.depth.toFixed
 const imperial = (room: Room) => `${feet(room.width)} × ${feet(room.depth)}`;
 
 type Edge = { horizontal: boolean; at: number; start: number; end: number };
-type MeasuredOpening = Edge & { name: string; wall: WallSide; door?: DoorOpening };
+type MeasuredOpening = Edge & { field: string; name: string; wall: WallSide; door?: DoorOpening };
 type Wall = Edge & { outside: boolean };
+const OPPOSITE_WALL = { north: "south", east: "west", south: "north", west: "east" } as const;
 
 function roomEdge(room: Room, wall: WallSide): Edge {
   const horizontal = wall === "north" || wall === "south";
@@ -178,36 +215,79 @@ const swingDirection = ({ wall, swing }: DoorOpening) =>
   (wall === "north" || wall === "west" ? 1 : -1) * (swing === "in" ? 1 : -1);
 
 function measurePlan(rooms: Room[], doors: DoorOpening[], windows: WindowOpening[]) {
-  const byName = new Map(rooms.map((room) => [room.name, room]));
-  if (!rooms.length || byName.size !== rooms.length) throw new Error("Give every room a unique name.");
-
+  const byName = new Map<string, Room>();
+  const neighbors = rooms.map(() => new Set<number>());
+  if (!rooms.length) throw new Error("rooms: Add at least one room.");
   for (const [i, a] of rooms.entries()) {
+    if (byName.has(a.name)) throw new Error(`rooms[${i}].name: "${a.name}" is already used by another room.`);
+    byName.set(a.name, a);
     if (a.x + a.width > 16 + EPSILON || a.y + a.depth > 16 + EPSILON) {
-      throw new Error(`${a.name} extends beyond the plan's 16 m by 16 m field.`);
+      throw new Error(`rooms[${i}]: "${a.name}" extends beyond the plan's 16 m by 16 m field.`);
     }
-    for (const b of rooms.slice(i + 1)) {
+    for (let j = i + 1; j < rooms.length; j++) {
+      const b = rooms[j];
       const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
       const overlapY = Math.min(a.y + a.depth, b.y + b.depth) - Math.max(a.y, b.y);
-      if (overlapX > EPSILON && overlapY > EPSILON) throw new Error(`${a.name} and ${b.name} overlap.`);
+      if (overlapX > EPSILON && overlapY > EPSILON) {
+        throw new Error(`rooms[${j}]: "${b.name}" overlaps "${a.name}".`);
+      }
+      const sharedWall = WALL_SIDES.some((side) => {
+        const edge = roomEdge(a, side);
+        const opposite = roomEdge(b, OPPOSITE_WALL[side]);
+        return sameWall(edge, opposite) && spanOverlaps(edge, opposite);
+      });
+      if (sharedWall) {
+        neighbors[i].add(j);
+        neighbors[j].add(i);
+      }
     }
   }
+  const isolated = neighbors.findIndex((adjacent) => adjacent.size === 0);
+  if (rooms.length > 1 && isolated >= 0) {
+    throw new Error(`rooms[${isolated}]: "${rooms[isolated].name}" must share a wall with another room.`);
+  }
+  const connected = new Set([0]);
+  for (const i of connected) {
+    for (const j of neighbors[i]) connected.add(j);
+  }
+  const disconnected = rooms.findIndex((_, i) => !connected.has(i));
+  if (disconnected >= 0) {
+    throw new Error(`rooms[${disconnected}]: "${rooms[disconnected].name}" is in a separate group. All rooms must form one connected footprint.`);
+  }
 
-  const measureOpening = (item: WindowOpening, door?: DoorOpening): MeasuredOpening => {
+  const measureOpening = (item: WindowOpening, field: string, door?: DoorOpening): MeasuredOpening => {
     const room = byName.get(item.room);
-    if (!room) throw new Error(`Opening refers to an unknown room: ${item.room}.`);
+    if (!room) throw new Error(`${field}.room: "${item.room}" is missing from rooms.`);
     const edge = roomEdge(room, item.wall);
     const start = edge.start + item.offset;
     const end = start + item.width;
-    if (start < edge.start + 0.05 - EPSILON || end > edge.end - 0.05 + EPSILON) {
-      throw new Error(`${item.room}'s ${item.wall} opening needs at least 0.05 m of wall at both ends.`);
+    if (start < edge.start + 0.05 - EPSILON) {
+      throw new Error(`${field}.offset: Leave at least 0.05 m before the opening on ${item.room}'s ${item.wall} wall.`);
     }
-    return { ...edge, start, end, name: item.room, wall: item.wall, door };
+    if (end > edge.end - 0.05 + EPSILON) {
+      throw new Error(`${field}.width: The opening at this offset must leave at least 0.05 m at the end of ${item.room}'s ${item.wall} wall.`);
+    }
+    const opening = { ...edge, start, end, field, name: item.room, wall: item.wall, door };
+    const shared = rooms.filter((other) => other !== room)
+      .map((other) => roomEdge(other, OPPOSITE_WALL[item.wall]))
+      .filter((opposite) => sameWall(opening, opposite) && spanOverlaps(opening, opposite));
+    if (!door && shared.length > 0) {
+      throw new Error(`${field}.wall: The window on ${item.room}'s ${item.wall} wall must lie entirely on an outside wall.`);
+    }
+    if (door && shared.length > 0 && !shared.some((opposite) => start >= opposite.start - EPSILON && end <= opposite.end + EPSILON)) {
+      throw new Error(`${field}.wall: The door on ${item.room}'s ${item.wall} wall must lie entirely on an outside wall or a wall shared with one other room.`);
+    }
+    return opening;
   };
-  const openings = [...doors.map((door) => measureOpening(door, door)), ...windows.map((window) => measureOpening(window))];
+  const openings = [
+    ...doors.map((door, i) => measureOpening(door, `doors[${i}]`, door)),
+    ...windows.map((window, i) => measureOpening(window, `windows[${i}]`)),
+  ];
 
   for (const [i, a] of openings.entries()) {
-    if (openings.slice(i + 1).some((b) => sameWall(a, b) && spanOverlaps(a, b))) {
-      throw new Error(`Two openings overlap on ${a.name}'s ${a.wall} wall.`);
+    const overlap = openings.slice(i + 1).find((b) => sameWall(a, b) && spanOverlaps(a, b));
+    if (overlap) {
+      throw new Error(`${overlap.field}.offset: This opening overlaps ${a.field} on ${a.name}'s ${a.wall} wall.`);
     }
   }
 
@@ -231,11 +311,7 @@ function measurePlan(rooms: Room[], doors: DoorOpening[], windows: WindowOpening
       const mid = (start + end) / 2;
       const faces = group.filter((face) => face.start < mid && mid < face.end).length;
       if (!faces) continue;
-      const gap = gaps.find((opening) => opening.start < mid && mid < opening.end);
-      if (gap) {
-        if (!gap.door && faces > 1) throw new Error(`${gap.name}'s ${gap.wall} window must be on an outside wall.`);
-        continue;
-      }
+      if (gaps.some((opening) => opening.start < mid && mid < opening.end)) continue;
       walls.push({ ...edge, start, end, outside: faces === 1 });
     }
   }
@@ -263,11 +339,24 @@ function FinchMark() {
   );
 }
 
-function FloorPlan({ rooms, plan, width, height }: {
+function AgencyMark({ name }: { name: string }) {
+  if (name === finchAndLowe.name) return <FinchMark />;
+  const words = name.match(/[\p{L}\p{N}]+/gu) ?? [];
+  const initials = words.filter((_, i) => i === 0 || i === words.length - 1)
+    .map((word) => Array.from(word)[0].toUpperCase()).join("");
+  return (
+    <Column style={{ width: 44, height: 44, backgroundColor: SLATE, justifyContent: "center" }}>
+      <Text style={{ ...heading, fontSize: 21, color: PAPER, textAlign: "center" }}>{initials}</Text>
+    </Column>
+  );
+}
+
+function drawFloorPlan({ rooms, plan, width, height, isLetter }: {
   rooms: Room[];
   plan: ReturnType<typeof measurePlan>;
   width: number;
   height: number;
+  isLetter: boolean;
 }) {
   const { left, right, top, bottom, walls, openings, area } = plan;
   const rail = 169;
@@ -281,9 +370,9 @@ function FloorPlan({ rooms, plan, width, height }: {
   const yMin = Math.min(top, ...yTips);
   const extentX = Math.max(right, ...xTips) - xMin;
   const extentY = Math.max(bottom, ...yTips) - yMin;
-  const scale = Math.min((board - 82) / extentX, (height - 57) / extentY);
+  const scale = Math.min((board - 82) / extentX, (height - (isLetter ? 35 : 57)) / extentY);
   const x = (value: number) => (board + 16 - extentX * scale) / 2 + (value - xMin) * scale;
-  const y = (value: number) => (height - 12 - extentY * scale) / 2 + (value - yMin) * scale;
+  const y = (value: number) => (height - (isLetter ? 0 : 12) - extentY * scale) / 2 + (value - yMin) * scale;
   const point = (horizontal: boolean, along: number, across: number) =>
     horizontal ? [x(along), y(across)] : [x(across), y(along)];
   const swept = openings.flatMap(({ door, horizontal, at, start, end }) => {
@@ -333,12 +422,13 @@ function FloorPlan({ rooms, plan, width, height }: {
     };
   });
   const roomKey = labels.filter(({ position }) => !position);
-  const scaleMetres = [5, 2, 1, 0.5].find((metres) => metres * scale < rail - 43) ?? 0.5;
+  const scaleMetres = [5, 2, 1, 0.5, 0.2, 0.1].find((metres) => metres * scale < rail - 43) ?? 0.1;
   const scaleWidth = scaleMetres * scale;
   const compassX = 28;
   const legendX = board + 24;
-  const compactKey = roomKey.length > 4;
-  const showLegend = 123 + roomKey.length * 33 < height - 125;
+  const keyY = 128;
+  const keyEnd = keyY + roomKey.reduce((end, { room }) => end + (room.name.length > 18 ? 54 : 42), 0);
+  const showLegend = keyEnd <= height - 125;
   const legendY = height - 118;
   const scaleY = height - 42;
   const overlay = (key: string, left: number, top: number, width: number, text: ReturnType<typeof FinchMark>) => (
@@ -347,7 +437,7 @@ function FloorPlan({ rooms, plan, width, height }: {
     </Column>
   );
 
-  return (
+  const element = (
     <Layer style={{ width, height, backgroundColor: FIELD }}>
       <Svg width={width} height={height} title="Measured floor plan with doors, windows, north arrow and scale">
         <Rect width={width} height={height} style={{ fill: FIELD }} />
@@ -418,19 +508,20 @@ function FloorPlan({ rooms, plan, width, height }: {
             )}
           </Column>);
       })}
-      {overlay("area", legendX, 23, rail - 42,
+      {overlay("area", legendX, 23, rail - 33,
         <Column style={{ gap: 4 }}>
-          <Text style={{ ...label, fontSize: 9.5, letterSpacing: 0.7 }}>Approximate total area</Text>
+          <Text style={{ ...label, fontSize: 9.5, letterSpacing: 0.25 }}>Approximate floor area</Text>
           <Text style={{ ...heading, fontSize: 34, color: SLATE }}>{area.toFixed(1)} <Span style={{ fontSize: 20 }}>m²</Span></Text>
           <Text style={{ fontFamily: MONO, fontSize: 12, color: QUIET }}>{Math.round(area / (0.3048 ** 2)).toLocaleString("en-GB")} ft²</Text>
+          <Text style={{ fontSize: 11, color: QUIET }}>Sum of room areas</Text>
         </Column>)}
-      {roomKey.length > 0 && overlay("room key", legendX, 119, rail - 31,
-        <Column style={{ gap: compactKey ? 2 : 7 }}>
+      {roomKey.length > 0 && overlay("room key", legendX, keyY, rail - 31,
+        <Column style={{ gap: 4 }}>
           {roomKey.map(({ room, i }) => (
             <Column key={room.name} style={{ gap: 0 }}>
-              <Text style={{ fontSize: compactKey ? 9.5 : 11, fontWeight: 700, lineHeight: 1.05 }}>{i + 1}. {room.name}</Text>
-              <Text style={{ fontFamily: MONO, fontSize: compactKey ? 7.3 : 9, lineHeight: 1.15, color: QUIET }}>
-                {metric(room)}{compactKey ? " / " : <LineBreak />}{imperial(room)}
+              <Text style={{ fontSize: 11, fontWeight: 700, lineHeight: 1.1 }}>{i + 1}. {room.name}</Text>
+              <Text style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.15, color: QUIET }}>
+                {metric(room)}<LineBreak />{imperial(room)}
               </Text>
             </Column>
           ))}
@@ -442,6 +533,7 @@ function FloorPlan({ rooms, plan, width, height }: {
       {overlay("scale end", legendX + scaleWidth - 7, scaleY + 10, 30, <Text style={{ fontFamily: MONO, fontSize: 9, color: QUIET }}>{scaleMetres}</Text>)}
     </Layer>
   );
+  return { element, keyFits: keyEnd <= scaleY - 23 };
 }
 
 const EPC = [
@@ -456,13 +548,14 @@ const EPC = [
 const gradeOf = (score: number) => EPC.find(({ min }) => score >= min) ?? EPC[EPC.length - 1];
 
 function EnergyChart({ current, potential, width }: { current: number; potential: number; width: number }) {
-  const height = 130;
-  const step = 16;
-  const barHeight = 13;
-  const barEnd = (i: number) => width - 109 - i * 15;
+  const height = 137;
+  const step = 17;
+  const barHeight = 15;
+  const arrowWidth = 58;
+  const barEnd = (i: number) => width - 132 - i * 15;
   const marks = [
-    { score: current, name: "Current", x: width - 96, fill: SLATE, ink: PAPER },
-    { score: potential, name: "Potential", x: width - 47, fill: LIGHT_INK, ink: INK },
+    { score: current, name: "Current", x: width - 121, fill: SLATE, ink: PAPER },
+    { score: potential, name: "Potential", x: width - arrowWidth, fill: LIGHT_INK, ink: INK },
   ];
   return (
     <Layer style={{ width, height }}>
@@ -475,21 +568,21 @@ function EnergyChart({ current, potential, width }: { current: number; potential
         {marks.map(({ score, name, x, fill }) => {
           const { grade } = gradeOf(score);
           const y = 18 + EPC.findIndex((band) => band.grade === grade) * step;
-          return <Polygon key={name} points={`${x},${y + barHeight / 2} ${x + 7},${y} ${x + 46},${y} ${x + 46},${y + barHeight} ${x + 7},${y + barHeight}`} style={{ fill }} />;
+          return <Polygon key={name} points={`${x},${y + barHeight / 2} ${x + 7},${y} ${x + arrowWidth},${y} ${x + arrowWidth},${y + barHeight} ${x + 7},${y + barHeight}`} style={{ fill }} />;
         })}
       </Svg>
       {EPC.map(({ grade, min, max, ink }, i) => (
         <Column key={grade} style={{ padding: [19 + i * step, 0, 0, 7] }}>
-          <Text style={{ fontFamily: MONO, fontSize: 9, lineHeight: 1.2, color: ink }}>{grade}   {min}–{max}</Text>
+          <Text style={{ fontFamily: MONO, fontSize: 11, lineHeight: "13px", color: ink }}>{grade}   {min}–{max}</Text>
         </Column>
       ))}
       {marks.map(({ score, name, x, ink }) => {
         const { grade } = gradeOf(score);
         return (
           <Column key={name} style={{ padding: [0, 0, 0, x] }}>
-            <Column style={{ width: 46, gap: 19 + EPC.findIndex((band) => band.grade === grade) * step - 10 }}>
-              <Text style={{ ...label, fontSize: 8.2, letterSpacing: 0, lineHeight: "10px", textAlign: "center" }}>{name}</Text>
-              <Text style={{ fontFamily: MONO, fontSize: 9, lineHeight: 1.15, color: ink, textAlign: "center" }}>{score} {grade}</Text>
+            <Column style={{ width: arrowWidth, gap: 6 + EPC.findIndex((band) => band.grade === grade) * step }}>
+              <Text style={{ ...label, fontSize: 10.7, letterSpacing: 0, lineHeight: "13px", textAlign: "center" }}>{name}</Text>
+              <Text style={{ fontFamily: MONO, fontSize: 11, lineHeight: "13px", color: ink, textAlign: "center" }}>{score} {grade}</Text>
             </Column>
           </Column>
         );
@@ -500,6 +593,10 @@ function EnergyChart({ current, potential, width }: { current: number; potential
 
 export default function FinchLoweListingSheet({ values = ropewalk, size = "A4" }: ListingSheetProps = {}) {
   const v = values;
+  const agency = listingAgency(v);
+  const website = agencyWebsite(agency.website);
+  const dial = agency.phone.replace(/\D/g, "");
+  const telephone = agency.phone.startsWith("+") ? `+${dial}` : `+44${dial.slice(1)}`;
   if (![v.price, v.bedrooms, v.bathrooms, v.epcCurrent, v.epcPotential].every(Number.isInteger)) {
     throw new Error("Use whole numbers for price, room counts and EPC scores.");
   }
@@ -516,18 +613,22 @@ export default function FinchLoweListingSheet({ values = ropewalk, size = "A4" }
   const facts = [
     { name: "Bedrooms", value: v.bedrooms || "Studio" },
     { name: "Bathrooms", value: v.bathrooms },
-    { name: "Floor area", value: area, width: 136 },
+    { name: "Approx. floor area", value: area, width: 136 },
     { name: "Floor", value: v.floor },
     { name: "Tenure", value: v.tenure, width: 139 },
     { name: "Council tax", value: `Band ${v.councilTax}` },
   ];
   const energyWidth = Math.round((width - 29) * 0.49);
   // Give longer particulars or a room-heavy plan a second sheet at either paper size.
-  const separatePlan = v.address.length > 32 || v.street.length + v.town.length > 52 ||
+  const longListing = v.address.length > 32 || v.street.length + v.town.length > 52 ||
     v.description.some((paragraph) => paragraph.length > 190) ||
     v.features.length > 5 || v.features.filter((feature) => feature.length > 28).length > 2 ||
-    v.rooms.length > 7 || v.viewings.length > 88;
-  const planHeight = separatePlan ? (isLetter ? 640 : 690) : (isLetter ? 297 : 351);
+    v.rooms.length > 7 || v.viewings.length > 88 || agency.footerLine.length + website.hostname.length > 83;
+  const shortPlan = longListing ? undefined : drawFloorPlan({ rooms: v.rooms, plan, width, height: isLetter ? 312 : 351, isLetter });
+  const separatePlan = !shortPlan || !shortPlan.keyFits;
+  const drawing = separatePlan
+    ? drawFloorPlan({ rooms: v.rooms, plan, width, height: isLetter ? 640 : 690, isLetter })
+    : shortPlan;
   const addressBreak = v.address.length > 32 ? v.address.lastIndexOf(" ", 26) : -1;
   const addressLines = addressBreak > 0
     ? [v.address.slice(0, addressBreak), v.address.slice(addressBreak + 1)]
@@ -541,20 +642,20 @@ export default function FinchLoweListingSheet({ values = ropewalk, size = "A4" }
         <Heading level={2} style={{ ...heading, fontSize: 30 }}>Floor plan</Heading>
         <Text style={{ ...label, width: 185, textAlign: "right", fontSize: 9.5 }}>{v.floor} floor</Text>
       </Row>
-      <FloorPlan rooms={v.rooms} plan={plan} width={width} height={planHeight} />
+      {drawing.element}
     </Column>
   );
 
   return (
-    <Document size={size} margin={[40, 52, isLetter ? 33 : 38, 52]} lang="en-GB"
-      title={`${v.address}, ${v.town} | Finch & Lowe`} fonts={[...FONTS]}
+    <Document size={size} margin={[isLetter ? 36 : 40, 52, isLetter ? 31 : 38, 52]} lang="en-GB"
+      title={`${v.address}, ${v.town} | ${agency.name}`} fonts={[...FONTS]}
       style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.42, color: INK, backgroundColor: PAPER }}>
-      <Document.Page style={{ gap: separatePlan ? 32 : 16 }}>
+      <Document.Page style={{ gap: separatePlan ? 32 : isLetter ? 13 : 16 }}>
         <Row style={{ alignItems: "center", gap: 12, padding: [0, 0, 13], border: { bottom: border(SLATE) } }}>
-          <FinchMark />
+          <AgencyMark name={agency.name} />
           <Column style={{ gap: 3 }}>
-            <Text style={{ ...heading, fontSize: 27, color: SLATE }}>Finch & Lowe</Text>
-            <Text style={{ ...label, fontSize: 9.5 }}>Estate & letting agents</Text>
+            <Text style={{ ...heading, fontSize: 27, color: SLATE }}>{agency.name}</Text>
+            <Text style={{ ...label, fontSize: 9.5 }}>{agency.descriptor}</Text>
           </Column>
           <Column style={{ width: 150, gap: 3 }}>
             <Text style={{ ...label, textAlign: "right" }}>Particulars</Text>
@@ -616,10 +717,10 @@ export default function FinchLoweListingSheet({ values = ropewalk, size = "A4" }
             <Text style={{ color: LIGHT_INK, fontSize: 12.5, lineHeight: 1.35 }}>{v.viewings}</Text>
             <Text style={{ color: PAPER, fontSize: 15, lineHeight: 1.35, fontWeight: 700 }}>{v.agent}</Text>
             <Text style={{ color: PAPER, fontSize: 12, lineHeight: 1.25 }}>
-              <Link href={`tel:+44${v.phone.replace(/\D/g, "").slice(1)}`} style={{ color: PAPER }}>{v.phone}</Link>
+              <Link href={`tel:${telephone}`} style={{ color: PAPER }}>{agency.phone}</Link>
             </Text>
             <Text style={{ color: PAPER, fontSize: 12, lineHeight: 1.25 }}>
-              <Link href={`mailto:${v.email}`} style={{ color: PAPER }}>{v.email}</Link>
+              <Link href={`mailto:${agency.email}`} style={{ color: PAPER }}>{agency.email}</Link>
             </Text>
           </Column>
         </Row>
@@ -628,7 +729,7 @@ export default function FinchLoweListingSheet({ values = ropewalk, size = "A4" }
       {separatePlan && (
         <Document.Page style={{ gap: 23 }}>
           <Row style={{ alignItems: "center", gap: 12 }}>
-            <FinchMark />
+            <AgencyMark name={agency.name} />
             <Column style={{ gap: 2 }}>
               <Text style={{ ...heading, fontSize: 27, color: SLATE }}>{v.address}</Text>
               <Text style={{ fontSize: 13, color: QUIET }}>{v.street}, {v.town}</Text>
@@ -640,9 +741,11 @@ export default function FinchLoweListingSheet({ values = ropewalk, size = "A4" }
       )}
 
       <PageFooter style={{ padding: [10, 0, 0], gap: 5, border: { top: border() } }}>
-        <Text style={{ fontSize: 10.5, color: QUIET }}>Measurements are approximate. These particulars do not form part of a contract.</Text>
+        <Text style={{ fontSize: 10.5, color: QUIET }}>Room measurements are approximate. Floor area is the sum of the rooms. These particulars do not form part of a contract.</Text>
         <Row style={{ gap: 12 }}>
-          <Text style={{ ...label, fontSize: 9, letterSpacing: 0.5 }}>Finch & Lowe · finchandlowe.example</Text>
+          <Text style={{ ...label, fontSize: 9, letterSpacing: 0.5 }}>
+            {agency.footerLine} · <Link href={website.href} style={{ color: SLATE }}>{website.hostname}</Link>
+          </Text>
           <Text style={{ ...label, fontSize: 9, letterSpacing: 0.5, width: 140, textAlign: "right" }}>{v.reference} · <PageNumber /> / <PageNumber total /></Text>
         </Row>
       </PageFooter>

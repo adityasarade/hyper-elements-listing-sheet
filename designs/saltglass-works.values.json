@@ -4,13 +4,21 @@
     "module": "../templates/listing-sheet.tsx",
     "id": "finchlowe.ListingSheet",
     "version": "1.0.0",
-    "sha256": "c661c7a3e95a0967164bff224fef98a4f8bc41f1671b6bf4a52b644ab6bfbadd"
+    "sha256": "d0d8465a435dbb64c3386044653c2dd2fda1c2dffa3370b12b51f6fad212c34d"
   },
   "formats": [
     "a4",
     "letter"
   ],
   "values": {
+    "agency": {
+      "name": "Finch & Lowe",
+      "descriptor": "Estate & letting agents",
+      "website": "https://finchandlowe.example",
+      "email": "robin@finchandlowe.example",
+      "phone": "01632 960 381",
+      "footerLine": "Finch & Lowe"
+    },
     "reference": "FL–063",
     "address": "Flat 2, Saltglass Works",
     "street": "8 Lantern Steps",
@@ -157,8 +165,6 @@
     "epcCurrent": 61,
     "epcPotential": 78,
     "agent": "Robin Lowe",
-    "phone": "01632 960 381",
-    "email": "robin@finchandlowe.example",
     "viewings": "By appointment on Wednesdays, 5–7 pm, and Fridays, 12–2 pm."
   }
 }

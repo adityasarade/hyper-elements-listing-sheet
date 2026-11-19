@@ -1,20 +1,38 @@
 # Finch & Lowe listing sheet
 
-**A Hyper Elements template for a home’s listing sheet: the floor plan drawn to scale from its rooms, each room’s size beside it, the floor area added up, and the energy rating as the familiar coloured bands.**
+**A Hyper Elements listing sheet with a floor plan drawn to scale from its rooms, their dimensions, an approximate floor area and the familiar coloured energy bands.**
 
 [![Ropewalk House on A4, with the asking price, floor plan, energy chart and viewing details](docs/ropewalk-house-a4.png)](docs/ropewalk-house-a4.png)
 
-A property team can use the same room measurements for the viewing handout, the email attachment and the portal PDF. The measurements draw the plan and add up to the floor area, so editing a room updates both.
+## Quickstart
 
-## Use it
-
-Install with Node and npm. Have `pdftoppm` from Poppler on your PATH for the page PNGs. The build fetches the PDF fonts from Google Fonts on its first run.
+Run these commands in the root of a fresh clone with Node, npm and Poppler’s `pdftoppm` on your PATH.
 
 ```sh
-git clone https://github.com/adityasarade/hyper-elements-listing-sheet
-cd hyper-elements-listing-sheet
 npm ci
 npm run build
+npx hyper-elements check src templates designs
+```
+
+The build fetches Google Fonts on its first run and writes the PDFs and page PNGs to `out/`. Each of the three listings renders on A4 and Letter.
+
+A property team can use the same measurements for the viewing handout, the email attachment and the portal PDF. Editing a room updates both the drawing and the computed floor area.
+
+## Make it yours
+
+Copy the Kiln Court values and set `agency` to your name, descriptor, full website URL, email, phone and footer line. The header draws your initials. Set `rooms` to your measured rectangles in metres, with adjacent rooms sharing wall segments. Update `doors` and `windows` to match. [Kiln Court values](designs/kiln-court.values.json)
+
+```sh
+cp designs/kiln-court.values.json designs/my-listing.values.json
+# Edit designs/my-listing.values.json, then render both paper sizes.
+npm run build -- designs/my-listing.values.json
+```
+
+Use the CLI to see the field guidance or update a single value.
+
+```sh
+npx hyper-elements describe templates/listing-sheet.tsx
+npx hyper-elements design set designs/my-listing.values.json price=270000
 ```
 
 The gallery component renders Ropewalk House by default. Pass a listing and a paper size to render it from TSX.
@@ -29,15 +47,6 @@ const values: ListingValues = { ...ropewalk, price: 390000 };
 const sheet = <FinchLoweListingSheet values={values} size="Letter" />;
 ```
 
-Copy the checked example, then edit a field with the CLI. The build renders both formats named in the values file into `out/`.
-
-```sh
-npx hyper-elements describe templates/listing-sheet.tsx
-cp designs/ropewalk-house.values.json designs/my-listing.values.json
-npx hyper-elements design set designs/my-listing.values.json price=390000
-npm run build -- designs/my-listing.values.json
-```
-
 ## How Hyper Elements is used
 
 `Document.Page` holds the particulars. `PageFooter` repeats the agency, reference and page count. The print HTML and PDF use the same component. A longer listing can put the plan on a second sheet.
@@ -49,14 +58,16 @@ const area = rooms.reduce((sum, room) => sum + room.width * room.depth, 0);
 const squareFeet = Math.round(area / 0.3048 ** 2);
 ```
 
-The [template](templates/listing-sheet.tsx) limits copy length, feature count, room sizes, opening sizes and EPC scores. It checks for overlapping rooms, invalid openings and room counts that disagree with the plan. Its document rules require a language, allowed link schemes, and both horizontal and page overflow checks.
+The template checks that rooms form one connected footprint and that openings fit their walls. A door must fit entirely on an exterior wall or on a wall shared with one other room. Windows must fit entirely on an exterior wall. The displayed area is the approximate sum of the rooms’ measured rectangles. [Template source](templates/listing-sheet.tsx)
+
+The template allows web links to the hostname in `agency.website` and supports `mailto:` and `tel:`. Its document rules require a language and both layout and page overflow checks.
 
 ```ts
 formats: { a4: { size: "A4" }, letter: { size: "Letter" } },
 rules: {
   require: { core: ["layout/overflow", "document/overflow"] },
   root: { lang: true },
-  links: { domains: ["finchandlowe.example"], schemes: ["mailto", "tel"] },
+  links: { schemes: ["mailto", "tel"], tags: "deny" },
 },
 ```
 
@@ -92,18 +103,18 @@ With north at the top, `x` increases east and `y` increases south. Each doorway 
 
 ### A4 and Letter
 
-Both paper sizes use the same [Ropewalk House values](designs/ropewalk-house.values.json). [Saltglass Works](designs/saltglass-works.values.json) is a one-bedroom rental with a stepped footprint, an outward-swinging entrance and a computed area of **60.8 m² (654 ft²)**.
+Each listing uses a single values file for both paper sizes. Saltglass Works is a one-bedroom rental with a stepped footprint. Kiln Court uses the Marlowe & Reed agency details and monogram. [Saltglass Works values](designs/saltglass-works.values.json) · [Kiln Court values](designs/kiln-court.values.json)
 
-| Ropewalk House · Letter | Saltglass Works · A4 |
-| --- | --- |
-| [![Ropewalk House on US Letter](docs/ropewalk-house-letter.png)](docs/ropewalk-house-letter.png) | [![Saltglass Works rental on A4](docs/saltglass-works-a4.png)](docs/saltglass-works-a4.png) |
+| Ropewalk House · Letter | Saltglass Works · A4 | Kiln Court · A4 |
+| --- | --- | --- |
+| [![Ropewalk House on US Letter](docs/ropewalk-house-letter.png)](docs/ropewalk-house-letter.png) | [![Saltglass Works rental on A4](docs/saltglass-works-a4.png)](docs/saltglass-works-a4.png) | [![Marlowe & Reed’s Kiln Court listing on A4](docs/kiln-court-a4.png)](docs/kiln-court-a4.png) |
 
 ## Checks
 
 | Command | Result |
 | --- | --- |
-| `npm run build` | 0 errors and warnings, 0 notes |
-| `npx hyper-elements check templates designs` | 0 errors, 0 warnings, 0 skipped |
+| `npm run build` | 7 renders, 0 errors, 0 warnings, 0 notes |
+| `npx hyper-elements check src templates designs` | 8 designs, 0 errors, 0 warnings, 0 skipped |
 | `npx tsc --noEmit` | Exit 0 |
 
 The CLI checks the template and values. The build script renders their PDFs through the ESM PDF renderer and writes a PNG for each page.
@@ -112,9 +123,7 @@ The CLI checks the template and values. The build script renders their PDFs thro
 
 Copy [`src/finch-lowe-listing-sheet.tsx`](src/finch-lowe-listing-sheet.tsx) to `apps/website/examples/templates/`. It has the gallery's `meta` and renders with no props.
 
-We tested exactly that: the file, unchanged, in a local clone of the Hyper Elements site, through the site's own
-generator (`pnpm generate`) and dev server. It rendered with no diagnostics, and the generator drew the same one-page PDF, and appears on `/templates/finch-lowe-listing-sheet` beside the
-official designs:
+The original Finch & Lowe design was rendered locally using the site's generator and dev server. This screenshot shows that earlier version on the gallery page.
 
 ![The design on its page in a local build of the Hyper Elements template gallery, with its preview and source.](docs/in-the-gallery.jpg)
 

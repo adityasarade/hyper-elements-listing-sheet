@@ -1,12 +1,25 @@
-import { prop } from "@hyper-elements/react";
+import { prepare, prop } from "@hyper-elements/react";
 import { template } from "@hyper-elements/react/template";
-import FinchLoweListingSheet, { COUNCIL_BANDS, HINGES, ROOM_KINDS, SWINGS, WALL_SIDES, ropewalk } from "../src/finch-lowe-listing-sheet";
+import FinchLoweListingSheet, {
+  COUNCIL_BANDS, HINGES, ROOM_KINDS, SWINGS, WALL_SIDES,
+  agencyWebsite, listingAgency, ropewalk, type ListingValues,
+} from "../src/finch-lowe-listing-sheet";
 
 const text = (label: string, maxLength: number, guidance: string) =>
   prop.text({ label, maxLength, guidance, required: true });
 
 const number = (label: string, min: number, max: number, guidance: string) =>
   prop.number({ label, min, max, guidance, required: true });
+
+const phone = {
+  label: "Agency telephone", maxLength: 22, pattern: "^(?:0(?: ?[0-9]){10}|\\+[1-9](?: ?[0-9]){6,14})$",
+  guidance: "Use a UK national number with its leading 0, or an international number starting with + and the country code. Spaces are allowed.",
+};
+
+const email = {
+  label: "Agency email address", maxLength: 46, pattern: "^[a-zA-Z0-9._+-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)+$",
+  guidance: "Use the full email address for viewing enquiries.",
+};
 
 const opening = {
   room: text("Room name", 22, "Use the exact name from the Rooms list. List each opening only once."),
@@ -18,11 +31,19 @@ const opening = {
 export default template({
   id: "finchlowe.ListingSheet",
   version: "1.0.0",
-  label: "Finch & Lowe property listing sheet",
-  guidance: "Fill one home on one level. Draw it as named, non-overlapping rectangles in metres with north at the top. Use the same values for A4 and Letter.",
+  label: "Property listing sheet",
+  guidance: "Add your agency and one home on one level. Draw the home as named, non-overlapping rectangles in metres with north at the top. Use the same values for A4 and Letter.",
   root: "Document",
   formats: { a4: { size: "A4" }, letter: { size: "Letter" } },
   fields: {
+    agency: prop.object({
+      name: text("Agency name", 42, "Use the trading name. Its initials appear in the mark for agencies other than Finch & Lowe."),
+      descriptor: text("Agency descriptor", 44, "Use a short line such as Estate & letting agents."),
+      website: text("Agency website", 100, "Enter the full HTTP or HTTPS URL. Its hostname is the template's only allowed web domain."),
+      email: prop.text({ ...email, required: true }),
+      phone: prop.text({ ...phone, required: true }),
+      footerLine: text("Agency footer line", 46, "Use the agency name or a short trading line. The website appears beside it."),
+    }, { label: "Agency", guidance: "Set this for your agency. Older values files use the Finch & Lowe identity and their saved contact details." }),
     reference: text("Listing reference", 16, "Use the reference from your agency records."),
     address: text("Main address", 42, "Put the flat number and building name here."),
     street: text("Street address", 38, "Include the street number."),
@@ -47,40 +68,58 @@ export default template({
       depth: number("North–south depth (m)", 0.8, 16, "Use the measured interior depth."),
     }, { label: "Room", required: true }), {
       label: "Rooms", required: true, min: 1, max: 9,
-      guidance: "Give adjacent rooms a shared edge. Keep the finished footprint within 16 m east–west and 16 m north–south.",
+      guidance: "Join all rooms by shared wall segments. Keep the footprint within 16 m east–west and 16 m north–south.",
     }),
     doors: prop.list(prop.object({
       ...opening,
       width: number("Door leaf width (m)", 0.4, 1.6, "Give the width of one swinging leaf and leave at least 0.05 m of wall at either end."),
       hinge: prop.choice(HINGES, { label: "Hinge", required: true, guidance: "Start is left on a horizontal wall and top on a vertical wall." }),
       swing: prop.choice(SWINGS, { label: "Swing", required: true, guidance: "In opens into the named room. Out opens away from it." }),
-    }, { label: "Door", required: true }), { label: "Doors", max: 16 }),
+    }, { label: "Door", required: true }), {
+      label: "Doors", max: 16, guidance: "Keep each door entirely on an outside wall or a wall shared with one other room.",
+    }),
     windows: prop.list(prop.object(opening, { label: "Window", required: true }), {
       label: "Windows", max: 24, guidance: "Place windows only on the exposed part of an outside wall.",
     }),
     epcCurrent: number("Current EPC score", 1, 100, "Copy the whole-number score from the current certificate."),
     epcPotential: number("Potential EPC score", 1, 100, "Copy the whole-number potential score from the same certificate."),
     agent: text("Viewing contact", 36, "Give the name of the person handling appointments."),
-    phone: prop.text({
-      label: "UK phone number", required: true, maxLength: 18, pattern: "^0(?: ?[0-9]){10}$",
-      guidance: "Use the UK national number with its leading 0. Spaces are allowed.",
-    }),
-    email: prop.text({
-      label: "Agency email address", required: true, maxLength: 46, pattern: "^[a-zA-Z0-9._+-]+@finchandlowe\\.example$",
-      guidance: "Use a named mailbox at finchandlowe.example.",
-    }),
+    phone: prop.text({ ...phone, label: "Previous viewing phone", guidance: "For existing values files. Put new contact details in Agency." }),
+    email: prop.text({ ...email, label: "Previous viewing email", guidance: "For existing values files. Put new contact details in Agency." }),
     viewings: text("Viewing times", 105, "Give an appointment window and any booking instructions."),
   },
   rules: {
     require: { core: ["layout/overflow", "document/overflow"] },
     root: { lang: true },
-    links: { domains: ["finchandlowe.example"], schemes: ["mailto", "tel"] },
+    links: { schemes: ["mailto", "tel"], tags: "deny" },
   },
   example: ropewalk,
   render(v, { format }) {
-    return FinchLoweListingSheet({
+    const values: ListingValues = { ...v, description: [v.description[0], v.description[1]] };
+    const sheet = FinchLoweListingSheet({
       size: format === "letter" ? "Letter" : "A4",
-      values: { ...v, description: [v.description[0], v.description[1]] },
+      values,
     });
+    // Hyper Elements 0.5 only accepts static domains in rules.links.
+    const { hostname } = agencyWebsite(listingAgency(values).website);
+    const { root } = prepare(sheet);
+    if (root) requireAgencyDomain(root, hostname);
+    return sheet;
   },
 });
+
+function requireAgencyDomain(node: NonNullable<ReturnType<typeof prepare>["root"]>, hostname: string) {
+  for (const [key, spec] of Object.entries(node.definition.props)) {
+    if (spec.kind.name !== "link" && spec.kind.name !== "video") continue;
+    const value = node.props[key];
+    const href = value && typeof value === "object" && "href" in value ? value.href : value;
+    if (typeof href !== "string" || !/^https?:/i.test(href)) continue;
+    const url = new URL(href);
+    if (url.hostname !== hostname || url.username || url.password) {
+      throw new Error(`${node.path}.props.${key}: Web links must use the hostname from agency.website (${hostname}).`);
+    }
+  }
+  for (const child of node.children) {
+    if (typeof child !== "string") requireAgencyDomain(child, hostname);
+  }
+}
