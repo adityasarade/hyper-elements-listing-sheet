@@ -110,7 +110,13 @@ The CLI checks the template and values. The build script renders their PDFs thro
 
 ## Add it to the gallery
 
-Copy `src/finch-lowe-listing-sheet.tsx` to `apps/website/examples/templates/`. It has the gallery’s `meta` and renders with no props.
+Copy [`src/finch-lowe-listing-sheet.tsx`](src/finch-lowe-listing-sheet.tsx) to `apps/website/examples/templates/`. It has the gallery's `meta` and renders with no props.
+
+We tested exactly that: the file, unchanged, in a local clone of the Hyper Elements site, through the site's own
+generator (`pnpm generate`) and dev server. It rendered with no diagnostics, and the generator drew the same one-page PDF, and appears on `/templates/finch-lowe-listing-sheet` beside the
+official designs:
+
+![The design on its page in a local build of the Hyper Elements template gallery, with its preview and source.](docs/in-the-gallery.jpg)
 
 ## License
 
